@@ -4,26 +4,36 @@
 #include <string>
 #include <vector>
 
+/*
+* With these define and include, we tell GLFW that we will use vulakn, so they will include 
+* the vulkan header and loaders for us.
+*/
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include "Device.h"
-
+/*
+* This is the main class of the application. The execution starts at run
+* which will initialize the app and then enter the main loop.
+*/
 class TriangleApp {
 public:
+	// This is where the app starts
 	void run();
+	// It needs to be public, since GLWF callbacks need to access it. And those need to be 
+	// static and non-members
 	bool mFramebufferResized{ false };
 private:
 	// App logic
-	const uint32_t mWidth{800};
-	const uint32_t mHeight{600};
+	const uint32_t mWidth{800}; // window width in pixels
+	const uint32_t mHeight{600}; // window height in pixels
 	// To help with syncronization
 	const int MAX_FRAMES_IN_FLIGHT{ 2 };
 	// GLFW related
-	GLFWwindow* mWindow{ nullptr };
+	GLFWwindow* mWindow{ nullptr }; // Window handle, so we can free it at the end of execution
 	// Vulkan related
 	VkInstance mInstance{};
-	VkDebugUtilsMessengerEXT mDebugMessenger{};
+	VkDebugUtilsMessengerEXT mDebugMessenger{}; // Handle to the debug logger callback
 	VkQueue mGraphicsQueue;
 	VkQueue mPresentQueue;
 	VkSurfaceKHR mSurface;
@@ -50,7 +60,7 @@ private:
 	VkDevice mDevice{ VK_NULL_HANDLE };
 	// Enable validation layers and debug
 	const std::vector<const char*> mValidationLayers = {
-		"VK_LAYER_KHRONOS_validation"
+		"VK_LAYER_KHRONOS_validation" // Name of the validation layer to enable
 	};
 	// List of extension required for the device to be suitable
 	const std::vector<const char*> mDeviceExtensions = {
@@ -101,6 +111,7 @@ private:
 	// Validation layer and debug logger support
 	void setupDebugMessenger();
 	bool checkValidationLayerSupport();
+	// Factor out the filling of the debug message create info. Since we are going to use it in more than one place
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 };
 

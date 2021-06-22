@@ -3,6 +3,11 @@
 #include "TriangleApp.h"
 #include "DebugLog.h"
 
+
+/*
+* This is the entry point of the execution
+* The only public method
+*/
 void TriangleApp::run() {
 	initWindow();
 	initVulkan();
@@ -10,23 +15,36 @@ void TriangleApp::run() {
 	cleanup();
 }
 
+/*
+* This handles window creation and the register of callback functions
+*/
 void TriangleApp::initWindow() {
+	// This need to be called before doing anithing else
 	glfwInit();
-
+	// Since GLFW, was designed for OpenGL, we need to explicitlly tell him not to create
+	// an OGL context. Thi might change for future versions of GLFW
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
+	// Create the window an keep the handle, since we will need it to release resources at the end
 	mWindow = glfwCreateWindow(mWidth, mHeight, "Hello Triangle in Vulkan", nullptr, nullptr);
-	// Register this pointer with GLFW (so we can use it in statci callbacks)
+	// Register this pointer with GLFW (so we can have public access to the class in static callbacks)
 	glfwSetWindowUserPointer(mWindow, this);
-
-	glfwSetFramebufferSizeCallback(mWindow, framebufferResizeCallback);
+	// Register the callback function for window and interaction events
+	glfwSetFramebufferSizeCallback(mWindow, framebufferResizeCallback); // Callback for window resize
 }
 
+/*
+* An static non-member callback function. It's called when window gets resized
+*/
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	// Recover a reference to the app object (we only have public access)
 	auto app = reinterpret_cast<TriangleApp*>(glfwGetWindowUserPointer(window));
-	app->mFramebufferResized = true;
+	app->mFramebufferResized = true; // The window has been resized and we have not handle it yet
 }
 
+/*
+* This is the most important funtion for the porpouse of the tutorial. 
+* It handles all the vulkan initialization logic.
+*/
 void TriangleApp::initVulkan() {
 	createInstance();
 	setupDebugMessenger();
@@ -43,15 +61,25 @@ void TriangleApp::initVulkan() {
 	createSyncObjects();
 }
 
+/*
+* Mainloop: after intialization, the app enters this state and it will
+* keep handling events and drawing frames until an exit signal is detected
+*/
 void TriangleApp::mainLoop() {
+	// While the window has not been signal to close
 	while (!glfwWindowShouldClose(mWindow)) {
-		glfwPollEvents();
-		drawFrame();
+		glfwPollEvents(); // Handle any event register in the callbacks
+		drawFrame(); //draw another frame
 	}
 
 	vkDeviceWaitIdle(mDevice);
 }
 
+/*
+* It is called when the app is about to exit. It must free any resource
+* used by the app. It could be a Vulkan resource, a GLFW resource or an
+* application specific resource
+*/
 void TriangleApp::cleanup() {
 	cleanupSwapChain();
 
@@ -70,9 +98,9 @@ void TriangleApp::cleanup() {
 
 	vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
 	vkDestroyInstance(mInstance, nullptr);
-
-	glfwDestroyWindow(mWindow);
-	glfwTerminate();
+	// Free the GLFW resources
+	glfwDestroyWindow(mWindow); // The window
+	glfwTerminate(); // the GLFW framework
 }
 
 void TriangleApp::createInstance() {
@@ -80,7 +108,7 @@ void TriangleApp::createInstance() {
 		throw std::runtime_error("validation layers requested, but not available!");
 	}
 
-	// app Info struct help us configure the instance
+	// Optional app info struct help us configure the instance
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Hello Triangle";
@@ -88,23 +116,23 @@ void TriangleApp::createInstance() {
 	appInfo.pEngineName = "No Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
-	// To pass it we need to wrap in in another create info
+	// This struct holds the instance creation option
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo;
-
+	createInfo.pApplicationInfo = &appInfo; // Link to the app info (optional)
+	// query the required extensions
 	auto extensions = getRequiredExtensions();
 	// Validate that we have at least the required extensions
 	// validateExtensions(extensions);
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
-
-	// If we want the validation layers request them
+	// If we want the validation layers, we request them here
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if (mEnableValidationLayers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(mValidationLayers.size());
 		createInfo.ppEnabledLayerNames = mValidationLayers.data();
-
+		// Here we setup this debug to have a mechanism to debug the instance and device creation
+		// since, this will happen before setting up our more general debug logger
 		populateDebugMessengerCreateInfo(debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	} else {
