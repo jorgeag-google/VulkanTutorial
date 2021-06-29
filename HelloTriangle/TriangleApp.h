@@ -76,15 +76,17 @@ private:
 	void initVulkan();
 	void mainLoop();
 	void cleanup();
-	// Prepare the render target functions
+	// Prepare the render target functions. I.e. manage the swapchain
 	void createSurface();
 	void createSwapChain();
 	void recreateSwapChain();
 	void cleanupSwapChain();
 	void createImageViews();
+	// helpers to select the swapcahin options
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	// Shader elated 
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 	// Pipeline functions
 	void createGraphicsPipeline();

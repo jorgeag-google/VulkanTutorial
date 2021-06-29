@@ -3,6 +3,9 @@
 
 #include "TriangleApp.h"
 
+/*
+* Non member helper function, reads the contents of a binary file
+*/
 static std::vector<char> readFile(const std::string& filename) {
 	// Open the file with cursor at the end
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -18,7 +21,7 @@ static std::vector<char> readFile(const std::string& filename) {
 	std::vector<char> buffer(fileSize);
 
 	file.seekg(0); // rewind cursor at the start of the file
-	file.read(buffer.data(), fileSize);
+	file.read(buffer.data(), fileSize); // Read the content into the buffer
 	file.close();
 
 	return buffer;
@@ -57,7 +60,7 @@ void TriangleApp::createGraphicsPipeline() {
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	fragShaderStageInfo.module = fragShaderModule;
 	fragShaderStageInfo.pName = "main";
-	// Store the infos in an array 
+	// Store the infos in an array (This is how they need to be stored to create the pipeline)
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 	// Fixed stage: Vertex input
@@ -219,7 +222,7 @@ void TriangleApp::createRenderPass() {
 	// We do need to be able to use it the swapchan afetr render
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	
-	// We need to create a subpass (for things like shadow map, mighb be more than one)
+	// We need to create a subpass (for things like shadow map, might be more than one)
 	// Each subpass references one attachment
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;

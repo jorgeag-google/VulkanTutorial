@@ -74,7 +74,7 @@ void TriangleApp::createSwapChain() {
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;  // Direct render
 
 	// Keep a copy of the format and the extend since we will need it
 	mSwapChainImageFormat = surfaceFormat.format;
@@ -82,44 +82,46 @@ void TriangleApp::createSwapChain() {
 
 	QueueFamilyIndices indices = findQueueFamilies(mPhysicalDevice);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
-
+	// If there are two separate queuee (i.e. indices differ)
 	if (indices.graphicsFamily != indices.presentFamily) {
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		// We will need to transfer images between the queues
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; 
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
 	} else {
+		// Both queues are the same. For performance we have exlcusive ownership
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		createInfo.queueFamilyIndexCount = 0; // Optional
 		createInfo.pQueueFamilyIndices = nullptr; // Optional
 	}
-	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	createInfo.preTransform = swapChainSupport.capabilities.currentTransform; // No extra transform applied
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;  // Blending with other window of the windows system
 
 	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
+	createInfo.clipped = VK_TRUE; // We do not care about the pixels not drawn (maybe occluded by other window)
 
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	// If I do not provide this two, the validation layer presents this
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
 	if (vkCreateSwapchainKHR(mDevice, &createInfo, nullptr, &mSwapChain) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create swap chain!");
 	}
-
+	// The images were created by the swapchain, to use them we need to retrieve the handles.
+	// Note that since we only specified minimum, the implementation could have created more
+	// Because of that, we first query how many images
 	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, nullptr);
-	mSwapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, mSwapChainImages.data());
+	mSwapChainImages.resize(imageCount); // Resize our handle's container
+	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, mSwapChainImages.data()); // Get our hanldes
 }
 
 void TriangleApp::createImageViews() {
 	// Rezise array to hold the number of required views
 	// (one per image)
 	mSwapChainImageViews.resize(mSwapChainImages.size());
-	// Create the images
+	// Create the image's views
 	for (size_t i = 0; i < mSwapChainImages.size(); i++) {
 		VkImageViewCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = mSwapChainImages[i];
+		createInfo.image = mSwapChainImages[i]; // to which image corresponds this view
 
 		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		createInfo.format = mSwapChainImageFormat;
@@ -137,7 +139,7 @@ void TriangleApp::createImageViews() {
 		createInfo.subresourceRange.layerCount = 1;
 
 		if (vkCreateImageView(mDevice, &createInfo, nullptr, &mSwapChainImageViews[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create image views!");
+			throw std::runtime_error("failed to create an image view!");
 		}
 	}
 }
@@ -148,7 +150,7 @@ VkSurfaceFormatKHR TriangleApp::chooseSwapSurfaceFormat(
 	for (const auto& availableFormat : availableFormats) {
 		if (// Color channels and types (this a 32 bytes pixel format)
 			availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && 
-			// check the SRGB space ai avalable
+			// check the SRGB space is avalable
 			availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 
 			// Stop at the first one that fulfils our needs
@@ -178,7 +180,7 @@ VkExtent2D TriangleApp::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabil
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
 	} else {
-		// Get windoe width and height
+		// Get window's width and height
 		int width, height;
 		// We need to query them, since the screen coordinats and the pixel size might differ
 		// for example in retina display. Therefore we need to ask for the resolution in pixels
@@ -189,8 +191,8 @@ VkExtent2D TriangleApp::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabil
 			static_cast<uint32_t>(height)
 		};
 		// Clamp the desired values between the min and max available
-		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+		actualExtent.width  = std::clamp(actualExtent.width,  capabilities.minImageExtent.width,  capabilities.maxImageExtent.width);
+		actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
 		return actualExtent;
 	}

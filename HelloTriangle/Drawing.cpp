@@ -3,15 +3,15 @@
 void TriangleApp::createFramebuffers() {
 	// Make sure container can hold all the required FB (one per image in the swapchain)
 	mSwapChainFramebuffers.resize(mSwapChainImageViews.size());
-
+	// Create one frambuffer per imageView in the swapchain
 	for (size_t i = 0; i < mSwapChainImageViews.size(); i++) {
 		VkImageView attachments[] = {
-			mSwapChainImageViews[i]
+			mSwapChainImageViews[i] // View need to be provided as an array
 		};
 
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = mRenderPass;
+		framebufferInfo.renderPass = mRenderPass; // Our render pass needs to be compatible
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments = attachments;
 		framebufferInfo.width = mSwapChainExtent.width;
@@ -23,13 +23,18 @@ void TriangleApp::createFramebuffers() {
 		}
 	}
 }
-
+/*
+* We have to create a command pool before we can create command buffers. 
+* Command pools manage the memory that is used to store the buffers and 
+* command buffers are allocated from them
+*/
 void TriangleApp::createCommandPool() {
+	// Since each command buffer can only submit one queue family, the pool needs to refer to them
 	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(mPhysicalDevice);
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value(); // We are drawing, we will use the grafics queue
 	poolInfo.flags = 0; // Optional
 
 	if (vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mCommandPool) != VK_SUCCESS) {
@@ -41,7 +46,7 @@ void TriangleApp::createCommandPool() {
 void TriangleApp::createCommandBuffers() {
 	// We need to create one command buffer per each image in the swapchain
 	mCommandBuffers.resize(mSwapChainFramebuffers.size());
-	// We allocate memmory for the command buffers
+	// We allocate memmory (from the command pool) for the command buffers
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = mCommandPool;
@@ -53,7 +58,7 @@ void TriangleApp::createCommandBuffers() {
 	}
 
 	for (size_t i = 0; i < mCommandBuffers.size(); i++) {
-		// We need to make the beggining of the coomand buffer
+		// We need to mark the beggining of the command buffer
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // Not Optional anymore !
@@ -62,19 +67,18 @@ void TriangleApp::createCommandBuffers() {
 		if (vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
-		
+		// We also need to let him know to which render pass and which framebuffer
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = mRenderPass;
 		renderPassInfo.framebuffer = mSwapChainFramebuffers[i];
-		
+		// We will render the whole buffer
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = mSwapChainExtent;
-
+		// Clear the FB to black with 100 opacity
 		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
-
 		/* Recording the commands */
 		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		// Bind the desired pipeline 
@@ -140,7 +144,7 @@ void TriangleApp::drawFrame() {
 	// Mark the image as now being in use by this frame
 	mImagesInFlight[imageIndex] = mInFlightFences[mCurrentFrame];
 
-	// Prepare to submit commend to the queue
+	// Prepare to submit commands to the queue
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	// Set of conditions (we olnly heve one) to wait before executing

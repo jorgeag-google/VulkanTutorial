@@ -31,7 +31,7 @@ void TriangleApp::pickPhysicalDevice() {
 }
 
 SwapChainSupportDetails TriangleApp::querySwapChainSupport(VkPhysicalDevice device) {
-	// Fill the dteails struct by using the device and the surface form this objet
+	// Fill the details struct by using the device and the surface from this objet
 	// Before this call we need to already have a valid surface handle in this object
 	SwapChainSupportDetails details;
 	// First, capabilities
@@ -74,10 +74,11 @@ bool TriangleApp::isDeviceSuitable(VkPhysicalDevice device) {
 	// Check that this device has the correct queues that we will use
 	QueueFamilyIndices indices = findQueueFamilies(device);
 	// Check that this device supports all the extension we will need
+	// beetween them is the swapchain extension
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
-	// If the extension is supported the see if the swapchain is compatible with the surface
 	bool swapChainAdequate = false;
 	if (extensionsSupported) {
+		// If the extension is supported, then see if the swapchain is compatible with the surface
 		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
 		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 	}
@@ -92,7 +93,7 @@ void TriangleApp::createLogicalDevice() {
 	QueueFamilyIndices indices = findQueueFamilies(mPhysicalDevice);
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	// Set is to remove the duplicity, since it could be that
-	// the same queue support more than one operation, in this case,
+	// the same queue supports more than one operation. If that is the case,
 	// several indices are the same
 	std::set<uint32_t> uniqueQueueFamilies = { 
 		indices.graphicsFamily.value(), 
@@ -109,7 +110,7 @@ void TriangleApp::createLogicalDevice() {
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	// Second, the device fetaures
+	// Second, the device features
 	// For now, this can be left empthy ()
 	VkPhysicalDeviceFeatures deviceFeatures{};
 
@@ -143,6 +144,7 @@ void TriangleApp::createLogicalDevice() {
 	}
 
 	// We can adquire the queues handles too, since we just adquiere the device
+	// It could be that both handles are the same (See above)
 	vkGetDeviceQueue(mDevice, indices.graphicsFamily.value(), 0, &mGraphicsQueue);
 	vkGetDeviceQueue(mDevice, indices.presentFamily.value(), 0, &mPresentQueue);
 }
@@ -166,15 +168,18 @@ bool TriangleApp::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
 QueueFamilyIndices TriangleApp::findQueueFamilies(VkPhysicalDevice device) {
 	QueueFamilyIndices indices;
-
+	// Queary how many queue families
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
+	// get the list of families
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-	int i = 0;
+	int i = 0; // We register the queues by their index in the list
+	// Loop trough all the queues families to fullfill all our needs
+	// Note that one queue could support of all our required features
 	for (const auto& queueFamily : queueFamilies) {
+		// If this queue support graphics
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphicsFamily = i;
 		}
@@ -184,12 +189,11 @@ QueueFamilyIndices TriangleApp::findQueueFamilies(VkPhysicalDevice device) {
 		if (presentSupport) {
 			indices.presentFamily = i;
 		}
-
-		// If we already have all our queues we can early exit
+		// If we already have all our queue indices we can exit
 		if (indices.isComplete()) {
 			break;
 		}
-
+		// increment the queue index
 		i++;
 	}
 
