@@ -92,7 +92,7 @@ void TriangleApp::createLogicalDevice() {
 	// First, the queues structures
 	QueueFamilyIndices indices = findQueueFamilies(mPhysicalDevice);
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	// Set is to remove the duplicity, since it could be that
+	// The set is used to remove the duplicity, since it could be that
 	// the same queue supports more than one operation. If that is the case,
 	// several indices are the same
 	std::set<uint32_t> uniqueQueueFamilies = { 
@@ -168,7 +168,7 @@ bool TriangleApp::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
 QueueFamilyIndices TriangleApp::findQueueFamilies(VkPhysicalDevice device) {
 	QueueFamilyIndices indices;
-	// Queary how many queue families
+	// Query how many queue families
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 	// get the list of families

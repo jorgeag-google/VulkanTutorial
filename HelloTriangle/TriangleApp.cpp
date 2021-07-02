@@ -5,7 +5,7 @@
 
 
 /*
-* This is the entry point of the execution
+* This is the entry point for the execution
 * The only public method
 */
 void TriangleApp::run() {
@@ -71,7 +71,8 @@ void TriangleApp::mainLoop() {
 		glfwPollEvents(); // Handle any event register in the callbacks
 		drawFrame(); //draw another frame
 	}
-
+	// Wait to all the possible queues operation to finish before cleaning
+	// It could be that some queues were working after we close the window
 	vkDeviceWaitIdle(mDevice);
 }
 
@@ -108,7 +109,7 @@ void TriangleApp::createInstance() {
 		throw std::runtime_error("validation layers requested, but not available!");
 	}
 
-	// Optional app info struct help us configure the instance
+	// Optional app info struct that help us configure the instance
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Hello Triangle";
@@ -131,7 +132,7 @@ void TriangleApp::createInstance() {
 	if (mEnableValidationLayers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(mValidationLayers.size());
 		createInfo.ppEnabledLayerNames = mValidationLayers.data();
-		// Here we setup this debug to have a mechanism to debug the instance and device creation
+		// Here we setup a debug to have a mechanism to debug the instance and device creation
 		// since, this will happen before setting up our more general debug logger
 		populateDebugMessengerCreateInfo(debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;

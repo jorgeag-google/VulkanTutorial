@@ -32,7 +32,7 @@ VkShaderModule TriangleApp::createShaderModule(const std::vector<char>& byteCode
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	// The size is in bytes
 	createInfo.codeSize = byteCode.size();
-	// However the pointer is required as 32 bit codes
+	// However the pointer is required as 32 bit unsigned int
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(byteCode.data());
 	VkShaderModule shaderModule;
 	if (vkCreateShaderModule(mDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
@@ -232,16 +232,19 @@ void TriangleApp::createRenderPass() {
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
-
+	// We add this dependency, so we can wait on an image available before we can write
+	// to the color attachment 
+	// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Rendering_and_presentation#page_Subpass-dependencies
 	VkSubpassDependency dependency{};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	// Indice refer to the subpasses before and after the one we are creating the depndency
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // Special value that means the one before this one
+	dependency.dstSubpass = 0; // Our subpass
+	// Operation to wait for and in which stage
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Stage to wait
+	dependency.srcAccessMask = 0; 
+	// Operations that it should wait
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // stage
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Operation
 
 	// Finally, using the two previous structures we can create the render pass
 	VkRenderPassCreateInfo renderPassInfo{};

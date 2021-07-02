@@ -8,20 +8,23 @@ void TriangleApp::createSurface() {
 		throw std::runtime_error("failed to create window surface!");
 	}
 }
-
+/*
+* Under some circustances (like a window resize) the swpachain needs to be recreated
+*/
 void TriangleApp::recreateSwapChain() {
-	
-	int width = 0, height = 0;
+	// Get the new width and heigth and make sure they are not zero (this could happen if the window is minimized)
+	int width{ 0 };
+	int height{ 0 };
 	glfwGetFramebufferSize(mWindow, &width, &height);
 	while (width == 0 || height == 0) {
 		glfwGetFramebufferSize(mWindow, &width, &height);
 		glfwWaitEvents();
 	}
-	
+	// Wait for all the queues and other operations, to finish before we recreate the swapchain
 	vkDeviceWaitIdle(mDevice);
-
+	// Destroy the objects associated with the previous swapchain
 	cleanupSwapChain();
-
+	// Create again the object with the new size
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
@@ -29,8 +32,12 @@ void TriangleApp::recreateSwapChain() {
 	createFramebuffers();
 	createCommandBuffers();
 }
-
+/*
+* Here you clean all the class memebers that depend on the swapchain
+* For example everything that is thight to the surface's width and height
+*/
 void TriangleApp::cleanupSwapChain() {
+	// First, clean all the objects that depend on the swapchain...
 	for (size_t i = 0; i < mSwapChainFramebuffers.size(); i++) {
 		vkDestroyFramebuffer(mDevice, mSwapChainFramebuffers[i], nullptr);
 	}
@@ -45,19 +52,19 @@ void TriangleApp::cleanupSwapChain() {
 	for (size_t i = 0; i < mSwapChainImageViews.size(); i++) {
 		vkDestroyImageView(mDevice, mSwapChainImageViews[i], nullptr);
 	}
-
+	// Finally, the swapchain itself
 	vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
 void TriangleApp::createSwapChain() {
 	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(mPhysicalDevice);
-	// We chose the best format, present mode and extent form all the available
+	// We chose the best format, present mode and extent from all the available
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
 	VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-	// Now we specify how many image we will require
+	// Now we specify how many images we will require
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-	// Make sur we do not exced the maximum
+	// Make sure we do not exced the maximum
 	if (// zero is a special value that means no maxmimum
 			swapChainSupport.capabilities.maxImageCount > 0 && 
 			imageCount > swapChainSupport.capabilities.maxImageCount
@@ -68,7 +75,7 @@ void TriangleApp::createSwapChain() {
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = mSurface;
-	// These details corresponds to the images and are the one we just calculated
+	// These details correspond to the images, and are the one we just calculated
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -110,11 +117,11 @@ void TriangleApp::createSwapChain() {
 	// Because of that, we first query how many images
 	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, nullptr);
 	mSwapChainImages.resize(imageCount); // Resize our handle's container
-	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, mSwapChainImages.data()); // Get our hanldes
+	vkGetSwapchainImagesKHR(mDevice, mSwapChain, &imageCount, mSwapChainImages.data()); // Get our handles
 }
 
 void TriangleApp::createImageViews() {
-	// Rezise array to hold the number of required views
+	// Resize array to hold the number of required views
 	// (one per image)
 	mSwapChainImageViews.resize(mSwapChainImages.size());
 	// Create the image's views
@@ -130,7 +137,7 @@ void TriangleApp::createImageViews() {
 		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		// How to use this images (this config is for simple render targets)
+		// How to use this image (this config is for simple render targets)
 		// No multiple layers, no mipamap levels
 		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		createInfo.subresourceRange.baseMipLevel = 0;

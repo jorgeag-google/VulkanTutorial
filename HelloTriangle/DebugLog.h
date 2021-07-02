@@ -9,7 +9,7 @@ std::string debugMgsg2str(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
 
-// This is the debug callback for even in the validation layers
+// This is the debug callback for an event in the validation layers
 // it is a static function so it does not have access to the app class
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

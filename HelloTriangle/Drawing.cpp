@@ -1,7 +1,7 @@
 #include "TriangleApp.h"
 
 void TriangleApp::createFramebuffers() {
-	// Make sure container can hold all the required FB (one per image in the swapchain)
+	// Make sure that the container can hold all the required FB (one per image in the swapchain)
 	mSwapChainFramebuffers.resize(mSwapChainImageViews.size());
 	// Create one frambuffer per imageView in the swapchain
 	for (size_t i = 0; i < mSwapChainImageViews.size(); i++) {
@@ -99,11 +99,12 @@ void TriangleApp::createSyncObjects() {
 	mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+	// This ones will be used as references for mapping into the InFlightFences array (That is why they are not created)
 	mImagesInFlight.resize(mSwapChainImages.size(), VK_NULL_HANDLE);
 	// For the semaphores
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	//For the fences
+	// For the fences
 	VkFenceCreateInfo fenceInfo{};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -127,17 +128,19 @@ void TriangleApp::drawFrame() {
 	
 	uint32_t imageIndex;
 	// Query for the index of the next available image in the swapchain
-	// We also pass down async object to signal
+	// We also pass down a sync object to signal
 	VkResult result = vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX,
 		mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
 	// Check that the swapchain still matches this surface
+	// Most driver will trhow this when the window is resized, but it is not garanted
+	// Look bellow (after presnetation), to know how to handle in case they don't signal
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		recreateSwapChain();
 		return;
 	} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
-	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
+	// Check if a previous frame is using this image (i.e. there is a fence to wait on)
 	if (mImagesInFlight[imageIndex] != VK_NULL_HANDLE) {
 		vkWaitForFences(mDevice, 1, &mImagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
 	}
@@ -147,12 +150,12 @@ void TriangleApp::drawFrame() {
 	// Prepare to submit commands to the queue
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	// Set of conditions (we olnly heve one) to wait before executing
+	// Set of conditions (we only have one) to wait before executing
 	VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame] };
 	// At which stage to wait
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
-	// Indcies makes a correspondence between the two arrays
+	// Indices makes a correspondence between the two arrays
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	// select the buffer to submit (using the image index)
@@ -162,7 +165,7 @@ void TriangleApp::drawFrame() {
 	VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphores[mCurrentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
-
+	// Reset the fence just before using it again in the graphics queue
 	vkResetFences(mDevice, 1, &mInFlightFences[mCurrentFrame]);
 	
 	// Submit to the queue
@@ -172,24 +175,28 @@ void TriangleApp::drawFrame() {
 	// Prepare to present the frame
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
+	// Semaphores to wait before presentation can happen (in this case the one was signal after we finish render)
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
-
+	// To which swapchains we want to present (Usually, just one)
 	VkSwapchainKHR swapChains[] = { mSwapChain };
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
+	// And which index in the swapchain to present
 	presentInfo.pImageIndices = &imageIndex;
-
+	// An optional array of return values, to check for errors in each swapchain. Since we just have one
+	// we will not use it. We will use the return value to see if there were errors
 	presentInfo.pResults = nullptr; // Optional
 	// Present the frame
 	result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
+	// If we present the frame but does not match the surface, we need to recreate the swapchain
+	// We need to do it after presenting the surface or the semaphores could end out of sync
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || mFramebufferResized) {
-		mFramebufferResized = false;
+		mFramebufferResized = false; // We are finally sure that we handle the resize
 		recreateSwapChain();
 	} else if (result != VK_SUCCESS) {
 		throw std::runtime_error("failed to present swap chain image!");
 	}
-
+	// Advance to the next frame
 	mCurrentFrame = (mCurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

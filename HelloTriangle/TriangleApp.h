@@ -52,8 +52,8 @@ private:
 	// Syncronization
 	std::vector <VkSemaphore> mImageAvailableSemaphores;
 	std::vector <VkSemaphore> mRenderFinishedSemaphores;
-	std::vector<VkFence> mInFlightFences;
-	std::vector<VkFence> mImagesInFlight;
+	std::vector<VkFence> mInFlightFences; // Actual fences
+	std::vector<VkFence> mImagesInFlight; // References to the previous array
 	size_t mCurrentFrame{ 0 };
 	// Device related
 	VkPhysicalDevice mPhysicalDevice{ VK_NULL_HANDLE };
@@ -82,16 +82,16 @@ private:
 	void recreateSwapChain();
 	void cleanupSwapChain();
 	void createImageViews();
-	// helpers to select the swapcahin options
+	// Helpers to select the swapcahin options
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-	// Shader elated 
+	// Shader related
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 	// Pipeline functions
 	void createGraphicsPipeline();
 	void createRenderPass();
-	// Comand recording
+	// Command recording
 	void createCommandPool();
 	void createCommandBuffers();
 	// Render
@@ -117,4 +117,5 @@ private:
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 };
 
+// GLFW callback (cannot be a class memeber)
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

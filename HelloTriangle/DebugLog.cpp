@@ -15,9 +15,10 @@ void TriangleApp::setupDebugMessenger() {
 		throw std::runtime_error("failed to set up debug messenger!");
 	}
 }
-/* Since the function vkCreateDebugUtilsMessengerEXT comes from an extension it is no automatic loaded as part of Vulkan
+/* 
+*  Since the function vkCreateDebugUtilsMessengerEXT comes from an extension it is no automatic loaded as part of Vulkan
 *  we need to manualy loaded before calling it. 
-* * This is a wrapper that solves the pointer and makes the call
+*  This is a wrapper that solves the pointer and makes the call
 */
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 	// get a pointer to the function
@@ -44,7 +45,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 	}
 }
 /*
-* Factor ou the filling of the debug message create info. Since we are going to use it in more than one place
+* Factor out the filling of the debug message create info. Since we are going to use it in more than one place
 */
 void TriangleApp::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -54,7 +55,7 @@ void TriangleApp::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateIn
 	createInfo.pUserData = nullptr; // Optional
 }
 
-// Format the error in the debug layer into an string that contains the info we desire to print
+// Format the error of the debug layer into an string that contains the info we desire to print
 std::string debugMgsg2str(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData) {
